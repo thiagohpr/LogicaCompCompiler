@@ -11,15 +11,16 @@ def roteiro_0_1 (input_string):
         
     operations = ['+', '-']
     input_no_brackets = input_string.replace('"', '')
-    input_no_spaces = input_no_brackets.replace(' ',  '')
-
-    if re.search("[^0-9+-]", input_no_spaces):
+    if re.search("[^0-9\s+-]", input_no_brackets):
         raise ValueError('Erro Léxico: Argumento possui caracteres inválidos.')
-    if input_no_spaces[0] in operations:
-        raise ValueError('Erro Sintático: Argumento começa com operação.')
+    if re.search('\d\s+\d', input_no_brackets):
+        raise ValueError('Erro Sintático: Argumento possui números seguidos.')
+    input_no_spaces = input_no_brackets.replace(' ',  '')
+    if input_no_spaces[0] in operations or input_no_spaces[-1] in operations:
+        raise ValueError('Erro Sintático: Argumento começa ou termina com operação.')
     if re.search('[+-]{2,}',input_no_spaces):
         raise ValueError('Erro Sintático: Argumento com operações seguidas.')
-        
+
     last_result = 0
     number = ''
     last_operation = ''

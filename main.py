@@ -1,42 +1,99 @@
 import sys
-import re
-def roteiro_0_1 (input_string):
-    #Tratando erros:
-        # Léxica: - não começar e terminar sem aspas
-        #         - qualquer input sem ser um inteiro ou + e -
-        #         
-        # Sintática: - começar com operação
-        #            - duas operações seguidas
-        #            - espaço entre dois números ???
-        
-    operations = ['+', '-']
-    input_no_brackets = input_string.replace('"', '')
-    input_no_spaces = input_no_brackets.replace(' ',  '')
 
-    if re.search("[^0-9+-]", input_no_spaces):
-        raise ValueError('Erro Léxico: Argumento possui caracteres inválidos.')
-    if input_no_spaces[0] in operations:
-        raise ValueError('Erro Sintático: Argumento começa com operação.')
-    if re.search('[+-]{2,}',input_no_spaces):
-        raise ValueError('Erro Sintático: Argumento com operações seguidas.')
-        
-    last_result = 0
-    number = ''
-    last_operation = ''
-    for i, letter in enumerate(input_no_spaces):
-        if letter in operations or i == len(input_no_spaces) - 1:
-            if letter not in operations:
-                number += letter
-            if last_operation == operations[0]:
-                last_result += int(number)
-            elif last_operation == operations[1]:
-                last_result -= int(number)
+class Token():
+    def __init__(self, value, type):
+        self.value = value
+        self.type = type
+
+class Tokenizer():
+    def __init__(self, source):
+        self.source = source
+        self.position = 0
+        self.next = None
+
+    def selectNext(self):
+        tokenIncomplete = True
+        operationsTokens = ['+', '-']
+        numbers = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9']
+
+        try:
+            c = self.source[self.position]
+        except:
+            self.next = Token('','EOF')
+            return
+
+        if c in operationsTokens:
+            if c == '+':
+                self.next = Token('+', 'PLUS')
             else:
-                last_result = int(number)
-            last_operation = letter
+                self.next = Token('-', 'MINUS')
+            self.position+=1
+ 
+        elif c in numbers:
+            tokenIncomplete = True
             number = ''
-        else:
-            number += letter
-    return last_result
+            number += c
+            while tokenIncomplete:
+                self.position+=1
+                try:
+                    c = self.source[self.position]
+                except:
+                    self.next = Token(int(number),'INT')
+                    return
+                
+                if c == ' ' or c in operationsTokens:
+                    tokenIncomplete = False
+                    self.next = Token(int(number),'INT')
+                else:
+                    number += c
+        elif c == ' ':
+            self.position += 1
+            self.selectNext()
+        
+class Parser():
+    tokenizer = None
+    @staticmethod
+    def parseExpression():
+        token_atual = Parser.tokenizer.next
+        if token_atual.type == 'INT':
+            resultado = token_atual.value
+            Parser.tokenizer.selectNext()
+            token_atual = Parser.tokenizer.next
 
-print(roteiro_0_1(sys.argv[1]))
+            while token_atual.type == 'PLUS' or token_atual.type == 'MINUS':
+                if token_atual.type == 'PLUS':
+                    Parser.tokenizer.selectNext()
+                    token_atual = Parser.tokenizer.next
+                    if token_atual.type == 'INT':
+                        resultado += token_atual.value
+                    else:
+                        raise ValueError('Operações seguidas!')
+
+                elif token_atual.type == 'MINUS':
+                    Parser.tokenizer.selectNext()
+                    token_atual = Parser.tokenizer.next
+                    if token_atual.type == 'INT':
+                        resultado -= token_atual.value
+                    else:
+                        raise ValueError('Operações seguidas!')
+                Parser.tokenizer.selectNext()
+                token_atual = Parser.tokenizer.next  
+            
+            return resultado
+
+        else:
+            raise ValueError('Começou com operação!')
+    @staticmethod
+    def run(code):
+        Parser.tokenizer = Tokenizer(code)
+        Parser.tokenizer.selectNext()
+
+        result = Parser.parseExpression()
+
+        if Parser.tokenizer.next.type == 'EOF':
+            return result
+        else:
+            raise ValueError('Não chegou no final do código!')
+
+parser = Parser()
+print(parser.run(sys.argv[1]))

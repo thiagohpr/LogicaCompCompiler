@@ -62,7 +62,7 @@ class PrePro():
             return code
         elif index_first_comment==0:
             return ''
-        return code[:index_first_comment-1]
+        return code[:index_first_comment]
     
 
 class Parser():

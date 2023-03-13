@@ -126,11 +126,9 @@ class Parser():
         token_atual = Parser.tokenizer.next
         while token_atual.type == 'PLUS' or token_atual.type == 'MINUS':
             Parser.tokenizer.selectNext()
-            this_node = BinOp(token_atual.value,[this_node,Parser.parseFactor()])
-            
+            this_node = BinOp(token_atual.value,[this_node,Parser.parseTerm()])
             token_atual = Parser.tokenizer.next  
 
-        
         return this_node
     
     @staticmethod
@@ -141,9 +139,8 @@ class Parser():
         while token_atual.type == 'MULT' or token_atual.type == 'DIV':
             Parser.tokenizer.selectNext()
             this_node = BinOp(token_atual.value,[this_node,Parser.parseFactor()])
-
             token_atual = Parser.tokenizer.next  
-        
+
         return this_node
         
     @staticmethod
@@ -192,11 +189,11 @@ class Parser():
         else:
             raise ValueError('Não chegou no final do código!')
 
-parser = Parser()
-archive = sys.argv[1]
-with open(archive, 'r') as file:
-    archive_content = file.read()
-print(parser.run(archive_content))
+# parser = Parser()
+# archive = sys.argv[1]
+# with open(archive, 'r') as file:
+#     archive_content = file.read()
+# print(parser.run(archive_content))
 
 # words = [
 #     '3-2',
@@ -216,8 +213,8 @@ print(parser.run(archive_content))
 #     '4/(1+1)*2',
 #     '(2*2'
 # ]
-# parser = Parser()
-# print(parser.run('3* 3 + # a 5'))
+parser = Parser()
+print(parser.run('2+5*4'))
 # for word in words2:
 #     print(word)
 #     parser.run(word)

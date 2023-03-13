@@ -140,8 +140,6 @@ class Parser():
         Parser.tokenizer.selectNext()
 
         result = Parser.parseExpression()
-        print(result)
-        print(Parser.tokenizer.next.type, print(Parser.tokenizer.next.value))
         if Parser.tokenizer.next.type == 'EOF':
             return result
         else:

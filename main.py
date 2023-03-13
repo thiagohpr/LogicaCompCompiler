@@ -1,5 +1,53 @@
 import sys
 
+class Node():
+    def __init__(self, value, children):
+        self.value = value
+        self.children = children
+    def evaluate(self):
+        pass 
+
+class UnOp(Node):
+    def __init__(self, value, children):
+        super().__init__(value, children)
+
+    def evaluate(self):
+        if self.value=='-':
+            return -self.children[0].evaluate()
+        return self.children[0].evaluate()
+
+class IntVal(Node):
+    def __init__(self, value):
+        super().__init__(value, [])
+
+    def evaluate(self):
+        return self.value
+    
+class NoOp(Node):
+    def __init__(self):
+        super().__init__(None, [])
+
+    def evaluate(self):
+        return super().evaluate()
+
+class BinOp(Node):
+    def __init__(self, value, children):
+        super().__init__(value, children)
+    
+    def evaluate(self):
+        if self.value=='+':
+            return self.children[0].evaluate() + self.children[1].evaluate()
+
+        if self.value=='-':
+            return self.children[0].evaluate() - self.children[1].evaluate()
+
+        if self.value=='*':
+            return self.children[0].evaluate() * self.children[1].evaluate()
+
+        if self.value=='/':
+            return self.children[0].evaluate() // self.children[1].evaluate()
+        
+
 class Token():
     def __init__(self, value, type):
         self.value = value
@@ -74,63 +122,59 @@ class Parser():
 
     @staticmethod
     def parseExpression():
-        resultado = Parser.parseTerm()
+        this_node = Parser.parseTerm()
         token_atual = Parser.tokenizer.next
         while token_atual.type == 'PLUS' or token_atual.type == 'MINUS':
-            if token_atual.type == 'PLUS':
-                Parser.tokenizer.selectNext()
-                resultado += Parser.parseTerm()
-
-            elif token_atual.type == 'MINUS':
-                Parser.tokenizer.selectNext()
-                resultado -= Parser.parseTerm()
-
+            Parser.tokenizer.selectNext()
+            this_node = BinOp(token_atual.value,[this_node,Parser.parseFactor()])
+            
             token_atual = Parser.tokenizer.next  
+
         
-        return resultado
+        return this_node
     
     @staticmethod
     def parseTerm():
-        resultado = Parser.parseFactor()
+        # resultado = Parser.parseFactor()
+        this_node = Parser.parseFactor()
         token_atual = Parser.tokenizer.next
         while token_atual.type == 'MULT' or token_atual.type == 'DIV':
-            if token_atual.type == 'MULT':
-                Parser.tokenizer.selectNext()
-                resultado *= Parser.parseFactor()
-
-            elif token_atual.type == 'DIV':
-                Parser.tokenizer.selectNext()
-                resultado //= Parser.parseFactor()
+            Parser.tokenizer.selectNext()
+            this_node = BinOp(token_atual.value,[this_node,Parser.parseFactor()])
 
             token_atual = Parser.tokenizer.next  
         
-        return resultado
+        return this_node
         
     @staticmethod
     def parseFactor():
         token_atual = Parser.tokenizer.next
         if token_atual.type == 'INT':
-            resultado = token_atual.value
+            # resultado = token_atual.value
             Parser.tokenizer.selectNext()
+            this_node = IntVal(token_atual.value)
+            
 
         elif token_atual.type == 'MINUS':
             Parser.tokenizer.selectNext()
-            resultado = Parser.parseFactor() * (-1)
+            this_node = UnOp('-', [Parser.parseFactor()])
+            # resultado = Parser.parseFactor() * (-1)
 
         elif token_atual.type == 'PLUS':
             Parser.tokenizer.selectNext()
-            resultado = Parser.parseFactor()
+            this_node = UnOp('+', [Parser.parseFactor()])
+            # resultado = Parser.parseFactor()
 
         elif token_atual.value == '(':
             Parser.tokenizer.selectNext()
-            resultado = Parser.parseExpression()
+            this_node = Parser.parseExpression()
             token_atual = Parser.tokenizer.next
             if token_atual.value != ')':
                 raise ValueError('Não fechou parênteses!')
             Parser.tokenizer.selectNext()
         else:
             raise ValueError('Erro de continuidade!')
-        return resultado
+        return this_node
             
     @staticmethod
     def run(code):
@@ -140,14 +184,19 @@ class Parser():
         Parser.tokenizer = Tokenizer(code_filtered)
         Parser.tokenizer.selectNext()
 
-        result = Parser.parseExpression()
+        parent_node = Parser.parseExpression()
+        result = parent_node.evaluate()
+
         if Parser.tokenizer.next.type == 'EOF':
             return result
         else:
             raise ValueError('Não chegou no final do código!')
 
 parser = Parser()
-print(parser.run(sys.argv[1]))
+archive = sys.argv[1]
+with open(archive, 'r') as file:
+    archive_content = file.read()
+print(parser.run(archive_content))
 
 # words = [
 #     '3-2',
@@ -168,7 +217,7 @@ print(parser.run(sys.argv[1]))
 #     '(2*2'
 # ]
 # parser = Parser()
-# print(parser.run('4/(1+1)*2'))
+# print(parser.run('3* 3 + # a 5'))
 # for word in words2:
 #     print(word)
 #     parser.run(word)

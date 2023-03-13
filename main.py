@@ -189,11 +189,11 @@ class Parser():
         else:
             raise ValueError('Não chegou no final do código!')
 
-# parser = Parser()
-# archive = sys.argv[1]
-# with open(archive, 'r') as file:
-#     archive_content = file.read()
-# print(parser.run(archive_content))
+parser = Parser()
+archive = sys.argv[1]
+with open(archive, 'r') as file:
+    archive_content = file.read()
+print(parser.run(archive_content))
 
 # words = [
 #     '3-2',
@@ -213,8 +213,8 @@ class Parser():
 #     '4/(1+1)*2',
 #     '(2*2'
 # ]
-parser = Parser()
-print(parser.run('2+5*4'))
+# parser = Parser()
+# print(parser.run('2+5*4'))
 # for word in words2:
 #     print(word)
 #     parser.run(word)

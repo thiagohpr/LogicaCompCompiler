@@ -13,7 +13,7 @@ class Tokenizer():
 
     def selectNext(self):
         tokenIncomplete = True
-        operationsTokens = ['+', '-', '/', '*']
+        operationsTokens = ['+', '-', '/', '*', '(', ')']
         numbers = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9']
 
         try:
@@ -31,6 +31,10 @@ class Tokenizer():
                 self.next = Token('/', 'DIV')
             elif c == '*':
                 self.next = Token('*', 'MULT')
+            elif c == '(':
+                self.next = Token('(', 'PAREN')
+            elif c == ')':
+                self.next = Token(')', 'PAREN')
             self.position+=1
  
         elif c in numbers:
@@ -84,38 +88,49 @@ class Parser():
             token_atual = Parser.tokenizer.next  
         
         return resultado
-
+    
     @staticmethod
     def parseTerm():
+        resultado = Parser.parseFactor()
+        token_atual = Parser.tokenizer.next
+        while token_atual.type == 'MULT' or token_atual.type == 'DIV':
+            if token_atual.type == 'MULT':
+                Parser.tokenizer.selectNext()
+                resultado *= Parser.parseFactor()
+
+            elif token_atual.type == 'DIV':
+                Parser.tokenizer.selectNext()
+                resultado //= Parser.parseFactor()
+
+            token_atual = Parser.tokenizer.next  
+        
+        return resultado
+        
+    @staticmethod
+    def parseFactor():
         token_atual = Parser.tokenizer.next
         if token_atual.type == 'INT':
             resultado = token_atual.value
+
+        elif token_atual.type == 'MINUS':
             Parser.tokenizer.selectNext()
+            resultado = Parser.parseFactor() * (-1)
+
+        elif token_atual.type == 'PLUS':
+            Parser.tokenizer.selectNext()
+            resultado = Parser.parseFactor()
+
+        elif token_atual.value == '(':
+            Parser.tokenizer.selectNext()
+            resultado = Parser.parseExpression()
             token_atual = Parser.tokenizer.next
-
-            while token_atual.type == 'MULT' or token_atual.type == 'DIV':
-                if token_atual.type == 'MULT':
-                    Parser.tokenizer.selectNext()
-                    token_atual = Parser.tokenizer.next
-                    if token_atual.type == 'INT':
-                        resultado *= token_atual.value
-                    else:
-                        raise ValueError('Operações seguidas!')
-
-                elif token_atual.type == 'DIV':
-                    Parser.tokenizer.selectNext()
-                    token_atual = Parser.tokenizer.next
-                    if token_atual.type == 'INT':
-                        resultado //= token_atual.value
-                    else:
-                        raise ValueError('Operações seguidas!')
-                Parser.tokenizer.selectNext()
-                token_atual = Parser.tokenizer.next  
-            
-            return resultado
-
+            if token_atual.value != ')':
+                raise ValueError('Não fechou parênteses!')
         else:
-            raise ValueError('Começou com operação!')
+            raise ValueError('Erro de continuidade!')
+        Parser.tokenizer.selectNext()
+        return resultado
+            
     @staticmethod
     def run(code):
         prepro = PrePro()
@@ -125,7 +140,8 @@ class Parser():
         Parser.tokenizer.selectNext()
 
         result = Parser.parseExpression()
-
+        print(result)
+        print(Parser.tokenizer.next.type, print(Parser.tokenizer.next.value))
         if Parser.tokenizer.next.type == 'EOF':
             return result
         else:
@@ -145,16 +161,24 @@ print(parser.run(sys.argv[1]))
 #     '# a',
 #     '3* 3 + # a 5'
 # ]
+# words2 = [
+#     '(3 + 2) /5',
+#     '+--++3',
+#     '3 - -2/4',
+#     '4/(1+1)*2',
+#     '(2*2'
+# ]
 # parser = Parser()
-# for word in words:
+# parser.run('(2*2')
+# for word in words2:
 #     print(word)
-#     print(parser.run(word))
-# #     prepro = PrePro()
-# #     code_filtered = prepro.filter(word)
-# #     tokenizer = Tokenizer(code_filtered)
-# #     tokenizer.selectNext()
-# #     print(f'{tokenizer.next.type}: {tokenizer.next.value}')
-# #     while (tokenizer.next.type!='EOF'):
-# #         tokenizer.selectNext()
-# #         print(f'{tokenizer.next.type}: {tokenizer.next.value}')
+#     parser.run(word)
+#     # prepro = PrePro()
+#     # code_filtered = prepro.filter(word)
+#     # tokenizer = Tokenizer(code_filtered)
+#     # tokenizer.selectNext()
+#     # print(f'{tokenizer.next.type}: {tokenizer.next.value}')
+#     # while (tokenizer.next.type!='EOF'):
+#     #     tokenizer.selectNext()
+#     #     print(f'{tokenizer.next.type}: {tokenizer.next.value}')
 #     print('-------------------------')

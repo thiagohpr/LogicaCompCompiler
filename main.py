@@ -111,6 +111,7 @@ class Parser():
         token_atual = Parser.tokenizer.next
         if token_atual.type == 'INT':
             resultado = token_atual.value
+            Parser.tokenizer.selectNext()
 
         elif token_atual.type == 'MINUS':
             Parser.tokenizer.selectNext()
@@ -126,9 +127,9 @@ class Parser():
             token_atual = Parser.tokenizer.next
             if token_atual.value != ')':
                 raise ValueError('Não fechou parênteses!')
+            Parser.tokenizer.selectNext()
         else:
             raise ValueError('Erro de continuidade!')
-        Parser.tokenizer.selectNext()
         return resultado
             
     @staticmethod
@@ -167,7 +168,7 @@ print(parser.run(sys.argv[1]))
 #     '(2*2'
 # ]
 # parser = Parser()
-# parser.run('(2*2')
+# print(parser.run('4/(1+1)*2'))
 # for word in words2:
 #     print(word)
 #     parser.run(word)

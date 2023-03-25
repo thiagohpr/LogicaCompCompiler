@@ -331,7 +331,7 @@ parser = Parser()
 archive = sys.argv[1]
 with open(archive, 'r') as file:
     archive_content = file.read()
-print(parser.run(archive_content))
+parser.run(archive_content)
 
 
 

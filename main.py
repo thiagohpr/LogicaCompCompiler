@@ -41,7 +41,7 @@ class NoOp(Node):
         super().__init__(None, [])
 
     def evaluate(self):
-        return super().evaluate()
+        super().evaluate()
 
 class BinOp(Node):
     def __init__(self, value, children):
@@ -181,12 +181,16 @@ class Tokenizer():
 class PrePro():
     @staticmethod
     def filter(code):
-        index_first_comment = code.find('#')
-        if index_first_comment==-1:
-            return code
-        elif index_first_comment==0:
-            return ''
-        return code[:index_first_comment]
+        statements=[]
+        for statement in code.split('\n'):
+            index_first_comment = statement.find('#')
+            if index_first_comment==-1:
+                statements.append(statement)
+            elif index_first_comment==0:
+                pass
+            else:
+                statements.append(statement[:index_first_comment])
+        return '\n'.join(statements)
     
 
 class Parser():
@@ -207,9 +211,8 @@ class Parser():
     def parseStatement():
         token_atual = Parser.tokenizer.next
         if token_atual.type == 'LINE':
-            # print('Enter')
             Parser.tokenizer.selectNext()
-            this_node = NoOp()
+            return NoOp()
         
         else:
             if token_atual.type == 'IDEN':
@@ -357,22 +360,24 @@ parser.run(archive_content)
 #     '''a = 1\nb435245= 1 + 2\nc =(3/4)/2*2\nprintln(c)'''
 # ]
 # parser = Parser()
-# print(parser.run('2+5*4'))
+# # print(parser.run('2+5*4'))
 
 # with open('teste.jl', 'r') as file:
 #     archive_content = file.read()
 # words = [archive_content]
 # for word in words:
-    # prepro = PrePro()
-    # code_filtered = prepro.filter(word)
-    # tokenizer = Tokenizer(code_filtered)
-    # tokenizer.selectNext()
-    # print(f'{tokenizer.next.type}: {tokenizer.next.value}')
-    # while (tokenizer.next.type!='EOF'):
-    #     tokenizer.selectNext()
-    #     print(f'{tokenizer.next.type}: {tokenizer.next.value}')
+#     print(word)
 
-    # print(word)
-    # parser.run(word)
+#     prepro = PrePro()
+#     code_filtered = prepro.filter(word)
 
-    # print('-------------------------')
+#     tokenizer = Tokenizer(code_filtered)
+#     tokenizer.selectNext()
+#     print(f'{tokenizer.next.type}: {tokenizer.next.value}')
+#     while (tokenizer.next.type!='EOF'):
+#         tokenizer.selectNext()
+#         print(f'{tokenizer.next.type}: {tokenizer.next.value}')
+
+#     parser.run(word)
+
+#     print('-------------------------')

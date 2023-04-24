@@ -151,7 +151,7 @@ class Tokenizer():
         tokenIncomplete = True
         operationsTokens = ['+', '-', '/', '*', '(', ')','=','>','<','|','&','!']
         numbers = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9']
-        reservedWords = ['println','if','else','while','readln','end']
+        reservedWords = ['println','if','else','while','readline','end']
 
         try:
             c = self.source[self.position]
@@ -461,7 +461,7 @@ class Parser():
             # print(')')
             Parser.tokenizer.selectNext()
 
-        elif token_atual.value == 'readln':
+        elif token_atual.value == 'readline':
             Parser.tokenizer.selectNext()
             token_atual = Parser.tokenizer.next
             if token_atual.value != '(':

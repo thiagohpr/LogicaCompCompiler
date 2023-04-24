@@ -26,7 +26,10 @@ class UnOp(Node):
         # print(f'UnOp {self.value}')
         if self.value=='-':
             return -self.children[0].evaluate()
-        return self.children[0].evaluate()
+        if self.value=='+':
+            return self.children[0].evaluate()
+        if self.value=='!':
+            return not self.children[0].evaluate()
 
 class IntVal(Node):
     def __init__(self, value):
@@ -61,6 +64,21 @@ class BinOp(Node):
         if self.value=='/':
             return self.children[0].evaluate() // self.children[1].evaluate()
         
+        if self.value=='||':
+            return self.children[0].evaluate() or self.children[1].evaluate()
+        
+        if self.value=='&&':
+            return self.children[0].evaluate() and self.children[1].evaluate()
+        
+        if self.value=='==':
+            return self.children[0].evaluate() == self.children[1].evaluate()
+        
+        if self.value=='>':
+            return self.children[0].evaluate() > self.children[1].evaluate()
+        
+        if self.value=='<':
+            return self.children[0].evaluate() < self.children[1].evaluate()
+        
 class Identifier(Node):
     def __init__(self, value):
         super().__init__(value, [])
@@ -74,6 +92,33 @@ class Print(Node):
     def evaluate(self):
         # print('Print')
         print(self.children[0].evaluate())
+
+class Read(Node):
+    def __init__(self):
+        super().__init__(None, [])
+    def evaluate(self):
+        # print('Print')
+        return int(input())
+    
+class While(Node):
+    def __init__(self, children):
+        super().__init__(None, children)
+    def evaluate(self):
+        # print('While')
+        while self.children[0].evaluate():
+            self.children[1].evaluate()
+
+class If(Node):
+    def __init__(self, children):
+        super().__init__(None, children)
+    def evaluate(self):
+        # print('If')
+        if self.children[0].evaluate():
+            self.children[1].evaluate()
+        else:
+            if len(self.children)==3:
+               self.children[2].evaluate() 
+
 
 class Assignment(Node):
     def __init__(self, children):
@@ -104,9 +149,9 @@ class Tokenizer():
 
     def selectNext(self):
         tokenIncomplete = True
-        operationsTokens = ['+', '-', '/', '*', '(', ')','=']
+        operationsTokens = ['+', '-', '/', '*', '(', ')','=','>','<','|','&','!']
         numbers = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9']
-        reservedWords = ['println']
+        reservedWords = ['println','if','else','while','readln','end']
 
         try:
             c = self.source[self.position]
@@ -127,8 +172,33 @@ class Tokenizer():
                 self.next = Token('(', 'PAREN')
             elif c == ')':
                 self.next = Token(')', 'PAREN')
+            elif c == '>':
+                self.next = Token('>', 'GREATER')
+            elif c == '<':
+                self.next = Token('<', 'LESSER')
+            elif c == '!':
+                self.next = Token('!', 'NOT')
             elif c == '=':
-                self.next = Token('=', 'EQUAL')
+                next_c = self.source[self.position+1]
+                if next_c =='=':
+                    self.next = Token('==', 'EQUAL')
+                    self.position+=1
+                else:
+                    self.next = Token('=', 'ASSIGN')
+            elif c == '|':
+                next_c = self.source[self.position+1]
+                if next_c =='|':
+                    self.next = Token('||', 'OR')
+                    self.position+=1
+                else:
+                    raise ValueError('Erro Léxico')
+            elif c == '&':
+                next_c = self.source[self.position+1]
+                if next_c =='&':
+                    self.next = Token('&&', 'AND')
+                    self.position+=1
+                else:
+                    raise ValueError('Erro Léxico')
             self.position+=1
         elif c =='\n':
             self.next = Token('\n', 'LINE')
@@ -172,8 +242,8 @@ class Tokenizer():
                     
                     tokenIncomplete=False
             if word in reservedWords:
-                if word == reservedWords[0]:
-                    self.next = Token('println','PRINT')
+                if word in reservedWords:
+                    self.next = Token(word,word.upper())
             else:
                 self.next = Token(word,'IDEN')
 
@@ -210,6 +280,7 @@ class Parser():
     @staticmethod
     def parseStatement():
         token_atual = Parser.tokenizer.next
+        # print(f'Entrada statement: {token_atual.type}')
         if token_atual.type == 'LINE':
             Parser.tokenizer.selectNext()
             return NoOp()
@@ -219,14 +290,14 @@ class Parser():
                 # print('Variável')
                 iden_name = token_atual.value
                 Parser.tokenizer.selectNext()
-                if Parser.tokenizer.next.type == 'EQUAL':
+                if Parser.tokenizer.next.type == 'ASSIGN':
                     # print('Igual')
                     Parser.tokenizer.selectNext()
-                    this_node = Assignment([Identifier(iden_name),Parser.parseExpression()])
+                    this_node = Assignment([Identifier(iden_name),Parser.parseRelExpression()])
                 else:
                     raise ValueError('Erro ao declarar variável.')
             
-            elif token_atual.type == 'PRINT':
+            elif token_atual.type == 'PRINTLN':
                 # print('Print')
                 Parser.tokenizer.selectNext()
                 token_atual = Parser.tokenizer.next
@@ -234,15 +305,77 @@ class Parser():
                     # print('(')
                     Parser.tokenizer.selectNext()
                     token_atual = Parser.tokenizer.next
-                    this_node = Print([Parser.parseExpression()])
+                    this_node = Print([Parser.parseRelExpression()])
                     token_atual = Parser.tokenizer.next
                     if token_atual.value != ')':
                         raise ValueError('Não fechou parênteses!')
                     # print(')')
                     Parser.tokenizer.selectNext()
 
+            elif token_atual.type == 'WHILE':
+                # print('While')
+                Parser.tokenizer.selectNext()
+                token_atual = Parser.tokenizer.next
+                condition_node = Parser.parseRelExpression()
+                token_atual = Parser.tokenizer.next
+                if token_atual.type == 'LINE':
+                    # print('Pulou linha while')
+                    Parser.tokenizer.selectNext()
+                    while_statement_list = []
+                    token_atual = Parser.tokenizer.next
+                    while token_atual.type!='END':
+                        while_statement_list.append(Parser.parseStatement())
+                        # Parser.tokenizer.selectNext()
+                        token_atual = Parser.tokenizer.next
+                    this_node = While([condition_node, Block(while_statement_list)])
+
+                    Parser.tokenizer.selectNext()
+                else:
+                    raise ValueError('Não pulou linha')
+                    
+            elif token_atual.type == 'IF':
+                # print('If')
+                Parser.tokenizer.selectNext()
+                token_atual = Parser.tokenizer.next
+                condition_node = Parser.parseRelExpression()
+                token_atual = Parser.tokenizer.next
+                if token_atual.type == 'LINE':
+                    # print('Pulou linha if')
+                    Parser.tokenizer.selectNext()
+                    if_statement_list = []
+                    token_atual = Parser.tokenizer.next
+                    while token_atual.type!='END' and token_atual.type!='ELSE':
+                        if_statement_list.append(Parser.parseStatement())
+                        # Parser.tokenizer.selectNext()
+                        token_atual = Parser.tokenizer.next
+                        # print(f'Bloco if: {token_atual.type}')
+                    if token_atual.type=='ELSE':
+                        # print('Else')
+                        Parser.tokenizer.selectNext()
+                        token_atual = Parser.tokenizer.next
+                        if token_atual.type == 'LINE':
+                            # print('Pulou linha else')
+                            #if com 3 filhos
+                            Parser.tokenizer.selectNext()
+                            else_statement_list = []
+                            token_atual = Parser.tokenizer.next
+                            while token_atual.type!='END':
+                                else_statement_list.append(Parser.parseStatement())
+                                token_atual = Parser.tokenizer.next
+                                # Parser.tokenizer.selectNext()
+                            this_node = If([condition_node, Block(if_statement_list), Block(else_statement_list)])
+                        else:
+                            raise ValueError('Não pulou linha')
+                    else:
+                        #if com 2 filhos
+                        this_node = If([condition_node, Block(if_statement_list)])
+
+                    Parser.tokenizer.selectNext()
+                else:
+                    raise ValueError('Não pulou linha')
+
             token_atual = Parser.tokenizer.next
-            # print(token_atual.type)
+            # print(f'Saída statement: {token_atual.type}')
             if token_atual.type == 'LINE' or token_atual.type == 'EOF':
                 Parser.tokenizer.selectNext()
                 return this_node
@@ -250,10 +383,22 @@ class Parser():
                 raise ValueError(r'A linha não acabou com um \n')
     
     @staticmethod
+    def parseRelExpression():
+        this_node = Parser.parseExpression()
+        token_atual = Parser.tokenizer.next
+        while token_atual.type == 'EQUAL' or token_atual.type == 'GREATER' or token_atual.type == 'LESSER':
+            # print('Binop')
+            Parser.tokenizer.selectNext()
+            this_node = BinOp(token_atual.value,[this_node,Parser.parseExpression()])
+            token_atual = Parser.tokenizer.next  
+
+        return this_node
+    
+    @staticmethod
     def parseExpression():
         this_node = Parser.parseTerm()
         token_atual = Parser.tokenizer.next
-        while token_atual.type == 'PLUS' or token_atual.type == 'MINUS':
+        while token_atual.type == 'PLUS' or token_atual.type == 'MINUS' or token_atual.type == 'OR':
             # print('Binop')
             Parser.tokenizer.selectNext()
             this_node = BinOp(token_atual.value,[this_node,Parser.parseTerm()])
@@ -266,7 +411,7 @@ class Parser():
         # resultado = Parser.parseFactor()
         this_node = Parser.parseFactor()
         token_atual = Parser.tokenizer.next
-        while token_atual.type == 'MULT' or token_atual.type == 'DIV':
+        while token_atual.type == 'MULT' or token_atual.type == 'DIV' or token_atual.type == 'AND':
             # print('Binop')
             Parser.tokenizer.selectNext()
             this_node = BinOp(token_atual.value,[this_node,Parser.parseFactor()])
@@ -301,17 +446,38 @@ class Parser():
             this_node = UnOp('+', [Parser.parseFactor()])
             # resultado = Parser.parseFactor()
 
+        elif token_atual.type == 'NOT':
+            # print('Menos')
+            Parser.tokenizer.selectNext()
+            this_node = UnOp('!', [Parser.parseFactor()])
+
         elif token_atual.value == '(':
             # print('(')
             Parser.tokenizer.selectNext()
-            this_node = Parser.parseExpression()
+            this_node = Parser.parseRelExpression()
             token_atual = Parser.tokenizer.next
             if token_atual.value != ')':
                 raise ValueError('Não fechou parênteses!')
             # print(')')
             Parser.tokenizer.selectNext()
+
+        elif token_atual.value == 'readln':
+            Parser.tokenizer.selectNext()
+            token_atual = Parser.tokenizer.next
+            if token_atual.value != '(':
+                raise ValueError('Não abriu parênteses!')
+            Parser.tokenizer.selectNext()
+            token_atual = Parser.tokenizer.next
+            if token_atual.value != ')':
+                raise ValueError('Não fechou parêntêses!')
+            # print(')')
+            this_node = Read()
+            Parser.tokenizer.selectNext()
+
         else:
             raise ValueError('Erro de continuidade!')
+        
+
         return this_node
             
     @staticmethod
@@ -335,8 +501,6 @@ archive = sys.argv[1]
 with open(archive, 'r') as file:
     archive_content = file.read()
 parser.run(archive_content)
-
-
 
 # words = [
 #     '3-2',
@@ -368,16 +532,16 @@ parser.run(archive_content)
 # for word in words:
 #     print(word)
 
-#     prepro = PrePro()
-#     code_filtered = prepro.filter(word)
+    # prepro = PrePro()
+    # code_filtered = prepro.filter(word)
 
-#     tokenizer = Tokenizer(code_filtered)
-#     tokenizer.selectNext()
-#     print(f'{tokenizer.next.type}: {tokenizer.next.value}')
-#     while (tokenizer.next.type!='EOF'):
-#         tokenizer.selectNext()
-#         print(f'{tokenizer.next.type}: {tokenizer.next.value}')
+    # tokenizer = Tokenizer(code_filtered)
+    # tokenizer.selectNext()
+    # print(f'{tokenizer.next.type}: {tokenizer.next.value}')
+    # while (tokenizer.next.type!='EOF'):
+    #     tokenizer.selectNext()
+    #     print(f'{tokenizer.next.type}: {tokenizer.next.value}')
 
-#     parser.run(word)
+    # parser.run(word)
 
-#     print('-------------------------')
+    # print('-------------------------')

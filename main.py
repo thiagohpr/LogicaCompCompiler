@@ -148,7 +148,7 @@ class While(Node):
         super().__init__(None, children)
     def evaluate(self):
         # print('While')
-        while self.children[0].evaluate():
+        while self.children[0].evaluate()[1]:
             self.children[1].evaluate()
 
 class If(Node):

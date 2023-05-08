@@ -78,7 +78,7 @@ class BinOp(Node):
     def evaluate(self):
         # print(f'BinOp {self.value}')
         if self.value=='.':
-            return ('str', self.children[0].evaluate() + self.children[1].evaluate())
+            return ('str', self.children[0].evaluate()[1] + self.children[1].evaluate()[1])
         else:
             if self.children[0].evaluate()[0]=='int' and self.children[1].evaluate()[0]=='int':
                 if self.value=='+':
@@ -91,24 +91,31 @@ class BinOp(Node):
                     return ('int',self.children[0].evaluate()[1] * self.children[1].evaluate()[1])
 
                 if self.value=='/':
-                    return ('int',self.children[0].evaluate()[1] // self.children[1].evaluate()[1])
+                    return ('int',int(self.children[0].evaluate()[1] // self.children[1].evaluate()[1]))
                 
                 if self.value=='||':
-                    return ('int',self.children[0].evaluate()[1] or self.children[1].evaluate()[1])
+                    return ('int',int(self.children[0].evaluate()[1] or self.children[1].evaluate()[1]))
                 
                 if self.value=='&&':
-                    return ('int',self.children[0].evaluate()[1] and self.children[1].evaluate()[1])
+                    return ('int',int(self.children[0].evaluate()[1] and self.children[1].evaluate()[1]))
                 
                 if self.value=='==':
-                    return ('int',self.children[0].evaluate()[1] == self.children[1].evaluate()[1])
+                    return ('int',int(self.children[0].evaluate()[1] == self.children[1].evaluate()[1]))
                 
                 if self.value=='>':
-                    return ('int',self.children[0].evaluate()[1] > self.children[1].evaluate()[1])
+                    return ('int',int(self.children[0].evaluate()[1] > self.children[1].evaluate()[1]))
                 
                 if self.value=='<':
-                    return ('int',self.children[0].evaluate()[1] < self.children[1].evaluate()[1])
+                    return ('int',int(self.children[0].evaluate()[1] < self.children[1].evaluate()[1]))
             else:
-                raise ValueError('Operações entre valores de tipos diferentes!')
+                if self.value == '==':
+                    return ("Int", int(self.children[0].evaluate()[1] == self.children[1].evaluate()[1]))
+                elif self.value == '>':
+                    return ("Int", int(self.children[0].evaluate()[1] > self.children[1].evaluate()[1]))
+                elif self.value == '<':
+                    return ("Int", int(self.children[0].evaluate()[1] < self.children[1].evaluate()[1]))
+                else:
+                    raise ValueError('Erro de operação binária')
 class Identifier(Node):
     def __init__(self, value):
         super().__init__(value, [])

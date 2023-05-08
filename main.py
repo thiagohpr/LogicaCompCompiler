@@ -78,7 +78,7 @@ class BinOp(Node):
     def evaluate(self):
         # print(f'BinOp {self.value}')
         if self.value=='.':
-            return ('str', self.children[0].evaluate()[1] + self.children[1].evaluate()[1])
+            return ('str', str(self.children[0].evaluate()[1]) + str(self.children[1].evaluate()[1]))
         else:
             if self.children[0].evaluate()[0]=='int' and self.children[1].evaluate()[0]=='int':
                 if self.value=='+':

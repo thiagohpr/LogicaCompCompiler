@@ -7,8 +7,25 @@ class symbolTable():
             raise ValueError(f'Variável {name} não declarada!')
         return symbolTable.table[name]
 
-    def setter(name, value):
-        symbolTable.table[name] = value
+    def setter(name, valueTuple):
+        this_type, this_value = symbolTable.table[name]
+        new_type, new_value = valueTuple
+
+        if new_type == 'str':
+            new_type = 'string'
+
+        if name not in symbolTable.table.keys():
+            raise ValueError('Variável não declarada!')
+        
+        if new_type != this_type:
+            raise ValueError('Variável recebeu tipo errado!')
+
+        symbolTable.table[name] = (this_type, new_value)
+
+    def create(name, type):
+        if name in symbolTable.table.keys():
+            raise ValueError('Variável já declarada!')
+        symbolTable.table[name] = (type, None)
             
 
 class Node():
@@ -25,20 +42,28 @@ class UnOp(Node):
     def evaluate(self):
         # print(f'UnOp {self.value}')
         if self.value=='-':
-            return -self.children[0].evaluate()
+            return ('int',-self.children[0].evaluate())
         if self.value=='+':
-            return self.children[0].evaluate()
+            return ('int',self.children[0].evaluate())
         if self.value=='!':
-            return not self.children[0].evaluate()
+            return ('int',not self.children[0].evaluate())
 
 class IntVal(Node):
     def __init__(self, value):
         super().__init__(value, [])
 
     def evaluate(self):
-        # print(f'Valor {self.value}')
-        return self.value
+        # print(f'Int Valor {self.value}')
+        return ('int',self.value)
     
+class StrVal(Node):
+    def __init__(self, value):
+        super().__init__(value, [])
+
+    def evaluate(self):
+        # print(f'Str Valor {self.value}')
+        return ('str', self.value)
+
 class NoOp(Node):
     def __init__(self):
         super().__init__(None, [])
@@ -52,33 +77,38 @@ class BinOp(Node):
     
     def evaluate(self):
         # print(f'BinOp {self.value}')
-        if self.value=='+':
-            return self.children[0].evaluate() + self.children[1].evaluate()
+        if self.value=='.':
+            return ('str', self.children[0].evaluate() + self.children[1].evaluate())
+        else:
+            if self.children[0].evaluate()[0]=='int' and self.children[1].evaluate()[0]=='int':
+                if self.value=='+':
+                    return ('int',self.children[0].evaluate()[1] + self.children[1].evaluate()[1])
 
-        if self.value=='-':
-            return self.children[0].evaluate() - self.children[1].evaluate()
+                if self.value=='-':
+                    return ('int',self.children[0].evaluate()[1] - self.children[1].evaluate()[1])
 
-        if self.value=='*':
-            return self.children[0].evaluate() * self.children[1].evaluate()
+                if self.value=='*':
+                    return ('int',self.children[0].evaluate()[1] * self.children[1].evaluate()[1])
 
-        if self.value=='/':
-            return self.children[0].evaluate() // self.children[1].evaluate()
-        
-        if self.value=='||':
-            return self.children[0].evaluate() or self.children[1].evaluate()
-        
-        if self.value=='&&':
-            return self.children[0].evaluate() and self.children[1].evaluate()
-        
-        if self.value=='==':
-            return self.children[0].evaluate() == self.children[1].evaluate()
-        
-        if self.value=='>':
-            return self.children[0].evaluate() > self.children[1].evaluate()
-        
-        if self.value=='<':
-            return self.children[0].evaluate() < self.children[1].evaluate()
-        
+                if self.value=='/':
+                    return ('int',self.children[0].evaluate()[1] // self.children[1].evaluate()[1])
+                
+                if self.value=='||':
+                    return ('int',self.children[0].evaluate()[1] or self.children[1].evaluate()[1])
+                
+                if self.value=='&&':
+                    return ('int',self.children[0].evaluate()[1] and self.children[1].evaluate()[1])
+                
+                if self.value=='==':
+                    return ('int',self.children[0].evaluate()[1] == self.children[1].evaluate()[1])
+                
+                if self.value=='>':
+                    return ('int',self.children[0].evaluate()[1] > self.children[1].evaluate()[1])
+                
+                if self.value=='<':
+                    return ('int',self.children[0].evaluate()[1] < self.children[1].evaluate()[1])
+            else:
+                raise ValueError('Operações entre valores de tipos diferentes!')
 class Identifier(Node):
     def __init__(self, value):
         super().__init__(value, [])
@@ -91,15 +121,28 @@ class Print(Node):
         super().__init__(None, children)
     def evaluate(self):
         # print('Print')
-        print(self.children[0].evaluate())
+        print(self.children[0].evaluate()[1])
 
 class Read(Node):
     def __init__(self):
         super().__init__(None, [])
     def evaluate(self):
-        # print('Print')
-        return int(input())
-    
+        # print('Read')
+        return ('int', int(input()))
+
+class VarDec(Node):
+    def __init__(self, value, children):
+        super().__init__(value, children)
+    def evaluate(self):
+        # print(f'Create {self.value} {self.children[0].value} = {self.children[-1].evaluate()}')
+        symbolTable.create(self.children[0].value, self.value)
+        symbolTable.setter(self.children[0].value, self.children[-1].evaluate())
+        # else:
+        #     if self.value == 'String':
+        #         symbolTable.create(self.children[0].value, self.value, "")
+        #     elif self.value == 'Int':
+        #         symbolTable.create(self.children[0].value, self.value, 0)
+
 class While(Node):
     def __init__(self, children):
         super().__init__(None, children)
@@ -149,9 +192,9 @@ class Tokenizer():
 
     def selectNext(self):
         tokenIncomplete = True
-        operationsTokens = ['+', '-', '/', '*', '(', ')','=','>','<','|','&','!']
+        operationsTokens = ['+', '-', '/', '*', '(', ')','=','>','<','|','&','!',':','.']
         numbers = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9']
-        reservedWords = ['println','if','else','while','readline','end']
+        reservedWords = ['println','if','else','while','readline','end','Int','String']
 
         try:
             c = self.source[self.position]
@@ -178,6 +221,8 @@ class Tokenizer():
                 self.next = Token('<', 'LESSER')
             elif c == '!':
                 self.next = Token('!', 'NOT')
+            elif c == '.':
+                self.next = Token('.', 'CONCAT')
             elif c == '=':
                 next_c = self.source[self.position+1]
                 if next_c =='=':
@@ -199,6 +244,14 @@ class Tokenizer():
                     self.position+=1
                 else:
                     raise ValueError('Erro Léxico')
+            elif c == ':':
+                next_c = self.source[self.position+1]
+                if next_c ==':':
+                    self.next = Token('::', 'DEC')
+                    self.position+=1
+                else:
+                    raise ValueError('Erro Léxico')
+            
             self.position+=1
         elif c =='\n':
             self.next = Token('\n', 'LINE')
@@ -225,6 +278,23 @@ class Tokenizer():
             self.position += 1
             self.selectNext()
         
+        elif c=='"':
+            tokenIncomplete = True
+            word = ''
+            while tokenIncomplete:
+                self.position+=1
+                try:
+                    c = self.source[self.position]
+                    if c == '"':
+                        tokenIncomplete = False
+                        
+                    else:
+                        word += c
+                except:
+                    raise ValueError('Erro Léxico')
+            self.position+=1
+            self.next = Token(word,'STRING')
+
         else:
             tokenIncomplete = True
             word = ''
@@ -242,7 +312,9 @@ class Tokenizer():
                     
                     tokenIncomplete=False
             if word in reservedWords:
-                if word in reservedWords:
+                if word == 'Int' or word == 'String':
+                    self.next = Token(word, 'TYPE')
+                else:
                     self.next = Token(word,word.upper())
             else:
                 self.next = Token(word,'IDEN')
@@ -294,6 +366,27 @@ class Parser():
                     # print('Igual')
                     Parser.tokenizer.selectNext()
                     this_node = Assignment([Identifier(iden_name),Parser.parseRelExpression()])
+
+                elif Parser.tokenizer.next.type == 'DEC':
+                    # print('Dec')
+                    Parser.tokenizer.selectNext()
+                    if Parser.tokenizer.next.type == 'TYPE':
+                        varType = Parser.tokenizer.next.value.lower()
+                        Parser.tokenizer.selectNext()
+                        if Parser.tokenizer.next.type == 'ASSIGN':
+                            Parser.tokenizer.selectNext()
+                            this_node = VarDec(varType,[Identifier(iden_name),Parser.parseRelExpression()])
+                        else:
+                            default = ''
+                            if varType == 'int':
+                                default = IntVal(0)
+                            elif varType=='string':
+                                default = StrVal('')
+                            this_node = VarDec(varType,[Identifier(iden_name),default])
+
+                    else:
+                        raise ValueError('Tipo errado.')
+
                 else:
                     raise ValueError('Erro ao declarar variável.')
             
@@ -398,7 +491,7 @@ class Parser():
     def parseExpression():
         this_node = Parser.parseTerm()
         token_atual = Parser.tokenizer.next
-        while token_atual.type == 'PLUS' or token_atual.type == 'MINUS' or token_atual.type == 'OR':
+        while token_atual.type == 'PLUS' or token_atual.type == 'MINUS' or token_atual.type == 'OR' or token_atual.type == 'CONCAT':
             # print('Binop')
             Parser.tokenizer.selectNext()
             this_node = BinOp(token_atual.value,[this_node,Parser.parseTerm()])
@@ -428,6 +521,11 @@ class Parser():
             # resultado = token_atual.value
             Parser.tokenizer.selectNext()
             this_node = IntVal(token_atual.value)
+        elif token_atual.type == 'STRING':
+            # print('Inteiro')
+            # resultado = token_atual.value
+            Parser.tokenizer.selectNext()
+            this_node = StrVal(token_atual.value)
 
         elif token_atual.type == 'IDEN':
             # print('Variável')
@@ -476,7 +574,6 @@ class Parser():
 
         else:
             raise ValueError('Erro de continuidade!')
-        
 
         return this_node
             
@@ -524,7 +621,7 @@ parser.run(archive_content)
 #     '''a = 1\nb435245= 1 + 2\nc =(3/4)/2*2\nprintln(c)'''
 # ]
 # parser = Parser()
-# # print(parser.run('2+5*4'))
+# print(parser.run('2+5*4'))
 
 # with open('teste.jl', 'r') as file:
 #     archive_content = file.read()

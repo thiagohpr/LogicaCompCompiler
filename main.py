@@ -2,7 +2,8 @@ import sys
 
 class AssemblyHandler():
     def write(lines):
-        with open ('assembly.txt', 'r') as file:
+        filename = archive.split(".")[0]
+        with open(f"{filename}.asm", "r") as file:
             last_lines = file.read()
         with open ('assembly.txt', 'w') as file:
             file.write(last_lines)

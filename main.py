@@ -1,5 +1,14 @@
 import sys
 
+class AssemblyHandler():
+    def write(lines):
+        with open ('assembly.txt', 'r') as file:
+            last_lines = file.read()
+        with open ('assembly.txt', 'w') as file:
+            file.write(last_lines)
+            file.write(lines)
+    
+
 class symbolTable():
     table = {}
     def getter(name):
@@ -7,33 +16,39 @@ class symbolTable():
             raise ValueError(f'Variável {name} não declarada!')
         return symbolTable.table[name]
 
-    def setter(name, valueTuple):
-        this_type, this_value = symbolTable.table[name]
-        new_type, new_value = valueTuple
+    # def setter(name, valueTuple):
+    #     this_type, this_value = symbolTable.table[name]
+    #     new_type, new_value, shift = valueTuple
 
-        if new_type == 'str':
-            new_type = 'string'
+    #     if new_type == 'str':
+    #         new_type = 'string'
 
-        if name not in symbolTable.table.keys():
-            raise ValueError('Variável não declarada!')
+    #     if name not in symbolTable.table.keys():
+    #         raise ValueError('Variável não declarada!')
         
-        if new_type != this_type:
-            raise ValueError('Variável recebeu tipo errado!')
+    #     if new_type != this_type:
+    #         raise ValueError('Variável recebeu tipo errado!')
 
-        symbolTable.table[name] = (this_type, new_value)
+    #     symbolTable.table[name] = (this_type, new_value, shift)
 
     def create(name, type):
         if name in symbolTable.table.keys():
             raise ValueError('Variável já declarada!')
-        symbolTable.table[name] = (type, None)
+        symbolTable.table[name] = (type, None, -4*(len(symbolTable.table +1)))
             
 
 class Node():
+    i=0
+
     def __init__(self, value, children):
         self.value = value
         self.children = children
     def evaluate(self):
         pass
+
+    def new_id(self):
+        Node.i += 1
+        return Node.i
 
 class UnOp(Node):
     def __init__(self, value, children):
@@ -54,7 +69,8 @@ class IntVal(Node):
 
     def evaluate(self):
         # print(f'Int Valor {self.value}')
-        return ('int',self.value)
+        # return ('int',self.value)
+        AssemblyHandler.write(f'MOV EBX,{self.value}')
     
 class StrVal(Node):
     def __init__(self, value):
@@ -77,58 +93,106 @@ class BinOp(Node):
     
     def evaluate(self):
         # print(f'BinOp {self.value}')
-        if self.value=='.':
-            return ('str', str(self.children[0].evaluate()[1]) + str(self.children[1].evaluate()[1]))
+        # if self.value=='.':
+        #     return ('str', str(self.children[0].evaluate()[1]) + str(self.children[1].evaluate()[1]))
+        # else:
+        #     if self.children[0].evaluate()[0]=='int' and self.children[1].evaluate()[0]=='int':
+        #         if self.value=='+':
+        #             return ('int',self.children[0].evaluate()[1] + self.children[1].evaluate()[1])
+
+        #         if self.value=='-':
+        #             return ('int',self.children[0].evaluate()[1] - self.children[1].evaluate()[1])
+
+        #         if self.value=='*':
+        #             return ('int',self.children[0].evaluate()[1] * self.children[1].evaluate()[1])
+
+        #         if self.value=='/':
+        #             return ('int',int(self.children[0].evaluate()[1] // self.children[1].evaluate()[1]))
+                
+        #         if self.value=='||':
+        #             return ('int',int(self.children[0].evaluate()[1] or self.children[1].evaluate()[1]))
+                
+        #         if self.value=='&&':
+        #             return ('int',int(self.children[0].evaluate()[1] and self.children[1].evaluate()[1]))
+                
+        #         if self.value=='==':
+        #             return ('int',int(self.children[0].evaluate()[1] == self.children[1].evaluate()[1]))
+                
+        #         if self.value=='>':
+        #             return ('int',int(self.children[0].evaluate()[1] > self.children[1].evaluate()[1]))
+                
+        #         if self.value=='<':
+        #             return ('int',int(self.children[0].evaluate()[1] < self.children[1].evaluate()[1]))
+        #     else:
+        #         if self.value == '==':
+        #             return ("int", int(self.children[0].evaluate()[1] == self.children[1].evaluate()[1]))
+        #         elif self.value == '>':
+        #             return ("int", int(self.children[0].evaluate()[1] > self.children[1].evaluate()[1]))
+        #         elif self.value == '<':
+        #             return ("int", int(self.children[0].evaluate()[1] < self.children[1].evaluate()[1]))
+        #         else:
+        #             raise ValueError('Erro de operação binária')
+        self.children[0].evaluate()
+        AssemblyHandler('PUSH EBX')
+        self.children[1].evaluate()
+        AssemblyHandler('POP EAX')
+        operator = ''
+        lines = ''
+
+        if self.value in ['>','<','==']:
+            if self.value=='==':
+                operator = 'binop_je'
+            if self.value=='>':
+                operator = 'binop_jg'
+            if self.value=='<':
+                operator = 'binop_jl'
+
+            lines = f'''
+CMP EAX, EBX
+CALL {operator}'''
+
         else:
-            if self.children[0].evaluate()[0]=='int' and self.children[1].evaluate()[0]=='int':
-                if self.value=='+':
-                    return ('int',self.children[0].evaluate()[1] + self.children[1].evaluate()[1])
+            if self.value=='+':
+                operator = 'ADD'
+            if self.value=='-':
+                operator = 'SUB'
+            if self.value=='*':
+                operator = 'IMUL'
+            if self.value=='/':
+                operator = 'IDIV'
+            if self.value=='||':
+                operator = 'OR'
+            if self.value=='&&':
+                operator = 'AND'
+            lines = f'''
+{operator} EAX, EBX
+MOV EBX, EAX'''
 
-                if self.value=='-':
-                    return ('int',self.children[0].evaluate()[1] - self.children[1].evaluate()[1])
+        AssemblyHandler.write(lines)
 
-                if self.value=='*':
-                    return ('int',self.children[0].evaluate()[1] * self.children[1].evaluate()[1])
 
-                if self.value=='/':
-                    return ('int',int(self.children[0].evaluate()[1] // self.children[1].evaluate()[1]))
-                
-                if self.value=='||':
-                    return ('int',int(self.children[0].evaluate()[1] or self.children[1].evaluate()[1]))
-                
-                if self.value=='&&':
-                    return ('int',int(self.children[0].evaluate()[1] and self.children[1].evaluate()[1]))
-                
-                if self.value=='==':
-                    return ('int',int(self.children[0].evaluate()[1] == self.children[1].evaluate()[1]))
-                
-                if self.value=='>':
-                    return ('int',int(self.children[0].evaluate()[1] > self.children[1].evaluate()[1]))
-                
-                if self.value=='<':
-                    return ('int',int(self.children[0].evaluate()[1] < self.children[1].evaluate()[1]))
-            else:
-                if self.value == '==':
-                    return ("Int", int(self.children[0].evaluate()[1] == self.children[1].evaluate()[1]))
-                elif self.value == '>':
-                    return ("Int", int(self.children[0].evaluate()[1] > self.children[1].evaluate()[1]))
-                elif self.value == '<':
-                    return ("Int", int(self.children[0].evaluate()[1] < self.children[1].evaluate()[1]))
-                else:
-                    raise ValueError('Erro de operação binária')
+
 class Identifier(Node):
     def __init__(self, value):
         super().__init__(value, [])
     def evaluate(self):
         # print(f'Variavel {self.value}')
-        return symbolTable.getter(self.value)
+        # return symbolTable.getter(self.value)
+        AssemblyHandler(f'MOV EBX, [EBP{symbolTable.getter(self.value)[2]}]')
     
 class Print(Node):
     def __init__(self, children):
         super().__init__(None, children)
     def evaluate(self):
         # print('Print')
-        print(self.children[0].evaluate()[1])
+        #print(self.children[0].evaluate()[1])
+        self.children[0].evaluate()
+        lines = '''PUSH EBX
+CALL print
+POP EBX
+'''
+        AssemblyHandler.write(lines)
+
 
 class Read(Node):
     def __init__(self):
@@ -143,7 +207,11 @@ class VarDec(Node):
     def evaluate(self):
         # print(f'Create {self.value} {self.children[0].value} = {self.children[-1].evaluate()}')
         symbolTable.create(self.children[0].value, self.value)
-        symbolTable.setter(self.children[0].value, self.children[-1].evaluate())
+        AssemblyHandler.write('PUSH DWORD 0')
+        #symbolTable.setter(self.children[0].value, self.children[-1].evaluate())
+        self.children[-1].evaluate()
+        this_shift = symbolTable.getter(self.children[0].value)[2]
+        AssemblyHandler.write(f'MOV [EBP{this_shift}], EBX')
         # else:
         #     if self.value == 'String':
         #         symbolTable.create(self.children[0].value, self.value, "")
@@ -153,21 +221,54 @@ class VarDec(Node):
 class While(Node):
     def __init__(self, children):
         super().__init__(None, children)
+        self.id = self.new_id()
+
     def evaluate(self):
         # print('While')
-        while self.children[0].evaluate()[1]:
-            self.children[1].evaluate()
+        AssemblyHandler.write(f"LOOP_{self.id}:")
+        self.children[0].evaluate()
+        AssemblyHandler.write(f"CMP EBX, 0")
+        AssemblyHandler.write(f"JE EXIT_{self.id}")
+        self.children[1].evaluate()
+        AssemblyHandler.write(f"JMP LOOP_{self.id}")
+        AssemblyHandler.write(f"EXIT_{self.id}:")
+
+        #while self.children[0].evaluate()[1]:
+        #    self.children[1].evaluate()
 
 class If(Node):
     def __init__(self, children):
         super().__init__(None, children)
+        self.id = self.new_id()
+
     def evaluate(self):
         # print('If')
-        if self.children[0].evaluate():
+
+        if len(self.children) == 2: #if without else
+            self.children[0].evaluate()
+            AssemblyHandler.write(f"CMP EBX, 0")
+            AssemblyHandler.write(f"JE EXIT_{self.id}")
             self.children[1].evaluate()
-        else:
-            if len(self.children)==3:
-               self.children[2].evaluate() 
+            AssemblyHandler.write(f"EXIT_{self.id}:")
+            
+            
+            #if self.children[0].evaluate()[1]:
+            #    self.children[1].evaluate()
+        else: #if with else
+            self.children[0].evaluate()
+            AssemblyHandler.write(f"CMP EBX, 0")
+            AssemblyHandler.write(f"JE ELSE_{self.id}")
+            self.children[1].evaluate()
+            AssemblyHandler.write(f"JMP EXIT_{self.id}")
+            AssemblyHandler.write(f"ELSE_{self.id}:")
+            self.children[2].evaluate()
+            AssemblyHandler.write(f"EXIT_{self.id}:")
+
+        # if self.children[0].evaluate():
+        #     self.children[1].evaluate()
+        # else:
+        #     if len(self.children)==3:
+        #        self.children[2].evaluate() 
 
 
 class Assignment(Node):
@@ -175,7 +276,10 @@ class Assignment(Node):
         super().__init__(None, children)
     def evaluate(self):
         # print('Assignment')
-        symbolTable.setter(self.children[0].value, self.children[1].evaluate())
+        # symbolTable.setter(self.children[0].value, self.children[1].evaluate())
+        self.children[1].evaluate()
+        this_shift = symbolTable.getter(self.children[0].value)[2]
+        AssemblyHandler.write(f'MOV [EBP{this_shift}], EBX')
 
 class Block(Node):
     def __init__(self, children):
@@ -602,9 +706,105 @@ class Parser():
 
 parser = Parser()
 archive = sys.argv[1]
-with open(archive, 'r') as file:
-    archive_content = file.read()
-parser.run(archive_content)
+with open(archive, "r") as f:
+    codigo = f.read()
+    # create new file args[1].split(".")[0] + ".asm" file
+    with open(archive.split(".")[0] + ".asm", "w") as f:
+        lines = '''
+; constantes
+SYS_EXIT equ 1
+SYS_READ equ 3
+SYS_WRITE equ 4
+STDIN equ 0
+STDOUT equ 1
+True equ 1
+False equ 0
+
+segment .data
+
+segment .bss  ; variaveis
+  res RESB 1
+
+section .text
+  global _start
+
+print:  ; subrotina print
+
+  PUSH EBP ; guarda o base pointer
+  MOV EBP, ESP ; estabelece um novo base pointer
+
+  MOV EAX, [EBP+8] ; 1 argumento antes do RET e EBP
+  XOR ESI, ESI
+
+print_dec: ; empilha todos os digitos
+  MOV EDX, 0
+  MOV EBX, 0x000A
+  DIV EBX
+  ADD EDX, '0'
+  PUSH EDX
+  INC ESI ; contador de digitos
+  CMP EAX, 0
+  JZ print_next ; quando acabar pula
+  JMP print_dec
+
+print_next:
+  CMP ESI, 0
+  JZ print_exit ; quando acabar de imprimir
+  DEC ESI
+
+  MOV EAX, SYS_WRITE
+  MOV EBX, STDOUT
+
+  POP ECX
+  MOV [res], ECX
+  MOV ECX, res
+
+  MOV EDX, 1
+  INT 0x80
+  JMP print_next
+
+print_exit:
+  POP EBP
+  RET
+
+; subrotinas if/while
+binop_je:
+  JE binop_true
+  JMP binop_false
+
+binop_jg:
+  JG binop_true
+  JMP binop_false
+
+binop_jl:
+  JL binop_true
+  JMP binop_false
+
+binop_false:
+  MOV EBX, False
+  JMP binop_exit
+binop_true:
+  MOV EBX, True
+binop_exit:
+  RET
+
+_start:
+
+  PUSH EBP ; guarda o base pointer
+  MOV EBP, ESP ; estabelece um novo base pointer
+'''
+        f.write(lines)
+
+    parser.run(codigo)
+    
+    with open(archive.split(".")[0] + ".asm", "a") as f:
+        lines = '''
+; interrupcao de saida
+POP EBP
+MOV EAX, 1
+INT 0x80
+        '''
+        f.write(lines)
 
 # words = [
 #     '3-2',
@@ -627,8 +827,8 @@ parser.run(archive_content)
 # words3 = [
 #     '''a = 1\nb435245= 1 + 2\nc =(3/4)/2*2\nprintln(c)'''
 # ]
-# parser = Parser()
-# print(parser.run('2+5*4'))
+#parser = Parser()
+#print(parser.run('2+5*4'))
 
 # with open('teste.jl', 'r') as file:
 #     archive_content = file.read()
@@ -646,6 +846,12 @@ parser.run(archive_content)
     #     tokenizer.selectNext()
     #     print(f'{tokenizer.next.type}: {tokenizer.next.value}')
 
-    # parser.run(word)
+    #parser.run(word)
 
-    # print('-------------------------')
+#     lines = '''
+# MOV EBX, 3
+# POP EAX
+# ADD EAX, EBX'''
+#     AssemblyHandler.write(lines)
+
+    #print('-------------------------')

@@ -34,7 +34,7 @@ class symbolTable():
     def create(name, type):
         if name in symbolTable.table.keys():
             raise ValueError('Variável já declarada!')
-        symbolTable.table[name] = (type, None, -4*(len(symbolTable.table +1)))
+        symbolTable.table[name] = (type, None, -4*(len(symbolTable.table)+1))
             
 
 class Node():

@@ -5,9 +5,9 @@ class AssemblyHandler():
         filename = archive.split(".")[0]
         with open(f"{filename}.asm", "r") as file:
             last_lines = file.read()
-        with open ('assembly.txt', 'w') as file:
+        with open (f"{filename}.asm", 'w') as file:
             file.write(last_lines)
-            file.write(lines)
+            file.write(lines + '\n')
     
 
 class symbolTable():
@@ -707,6 +707,7 @@ class Parser():
 
 parser = Parser()
 archive = sys.argv[1]
+#archive = 'teste.jl'
 with open(archive, "r") as f:
     codigo = f.read()
     # create new file args[1].split(".")[0] + ".asm" file
@@ -806,6 +807,9 @@ MOV EAX, 1
 INT 0x80
         '''
         f.write(lines)
+
+
+
 
 # words = [
 #     '3-2',

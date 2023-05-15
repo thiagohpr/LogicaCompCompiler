@@ -134,9 +134,9 @@ class BinOp(Node):
         #         else:
         #             raise ValueError('Erro de operação binária')
         self.children[0].evaluate()
-        AssemblyHandler('PUSH EBX')
+        AssemblyHandler.write('PUSH EBX')
         self.children[1].evaluate()
-        AssemblyHandler('POP EAX')
+        AssemblyHandler.write('POP EAX')
         operator = ''
         lines = ''
 
@@ -179,7 +179,7 @@ class Identifier(Node):
     def evaluate(self):
         # print(f'Variavel {self.value}')
         # return symbolTable.getter(self.value)
-        AssemblyHandler(f'MOV EBX, [EBP{symbolTable.getter(self.value)[2]}]')
+        AssemblyHandler.write(f'MOV EBX, [EBP{symbolTable.getter(self.value)[2]}]')
     
 class Print(Node):
     def __init__(self, children):

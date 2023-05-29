@@ -565,7 +565,8 @@ class Parser():
                     token_atual = Parser.tokenizer.next
 
                     if token_atual.value == '(':
-                        funcArgs = [Identifier(iden_name)]
+                        funcArgs = []
+                        funcArgs.append(Identifier(iden_name))
 
                         Parser.tokenizer.selectNext()
                         token_atual = Parser.tokenizer.next
@@ -585,9 +586,10 @@ class Parser():
                                         varType = token_atual.value.lower()
                                         Parser.tokenizer.selectNext()
                                         token_atual = Parser.tokenizer.next
-                                        if token_atual.type == 'INT':
+        
+                                        if varType == 'int':
                                             funcArgs.append(VarDec(varType, [param_ident, IntVal(0)]))
-                                        elif varType == 'STRING':
+                                        elif varType == 'string':
                                             funcArgs.append(VarDec(varType, [param_ident, StrVal("")]))
                                         
                                         if token_atual.type == 'COMMA':
@@ -839,7 +841,7 @@ parser.run(archive_content)
 #     archive_content = file.read()
 # words = [archive_content]
 # for word in words:
-#     print(word)
+    # print(word)
 
     # prepro = PrePro()
     # code_filtered = prepro.filter(word)

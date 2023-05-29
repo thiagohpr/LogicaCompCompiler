@@ -298,7 +298,7 @@ class Tokenizer():
                 self.next = Token('!', 'NOT')
             elif c == '.':
                 self.next = Token('.', 'CONCAT')
-            elif char == ",":
+            elif c == ",":
                 self.next = Token(',', 'COMMA')
 
             elif c == '=':

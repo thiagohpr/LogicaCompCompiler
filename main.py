@@ -219,15 +219,15 @@ class Block(Node):
         
 
 class FuncDec(Node):
-    def _init_(self, value, children):
-        super()._init_(value, children)
+    def __init__(self, value, children):
+        super().__init__(value, children)
         
     def evaluate(self, table):
         funcTable.create(self.children[0].value, self)
 
 class FuncCall(Node):
-    def _init_(self, value, children):
-        super()._init_(value, children)
+    def __init__(self, value, children):
+        super().__init__(value, children)
         
     def evaluate(self, table): 
         funcNode = funcTable.getter(self.value)
@@ -247,7 +247,7 @@ class FuncCall(Node):
 
 class Return(Node):
     def __init__(self, children):
-        super()._init_("return", children)
+        super().__init__("return", children)
         
     def evaluate(self, table):
         return self.children[0].evaluate(table)     

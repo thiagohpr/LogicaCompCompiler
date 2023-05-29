@@ -478,9 +478,10 @@ class Parser():
                             Parser.tokenizer.selectNext()
                             token_atual = Parser.tokenizer.next
                         else:
+                            break
                             
                             
-                    if token_atual.type != "CLOSE":
+                    if token_atual.value != ')':
                         raise ValueError('Erro ao chamar função.')
 
                     this_node = FuncCall(iden_name, funcArgs)

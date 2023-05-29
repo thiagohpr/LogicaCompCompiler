@@ -235,7 +235,7 @@ class FuncCall(Node):
         if len(funcNode.children) - 2 != len(self.children):
             raise Exception("Erro de número de argumentos")
         
-        SymbolTableFunc = SymbolTable()
+        SymbolTableFunc = symbolTable()
         if len(funcNode.children) > 2:
             for i in range(1, len(funcNode.children) - 1):
                 SymbolTableFunc.create(funcNode.children[i], funcNode.children[i].evaluate(SymbolTableFunc))
@@ -804,7 +804,7 @@ class Parser():
             
     @staticmethod
     def run(code):
-        Parser.symbolTable = SymbolTable()
+        Parser.symbolTable = symbolTable()
 
         prepro = PrePro()
         code_filtered = prepro.filter(code)

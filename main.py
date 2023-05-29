@@ -37,25 +37,10 @@ class funcTable():
             raise ValueError(f'Variável {name} não declarada!')
         return funcTable.table[name]
 
-    def setter(name, valueTuple):
-        this_type, this_value = funcTable.table[name]
-        new_type, new_value = valueTuple
-
-        if new_type == 'str':
-            new_type = 'string'
-
-        if name not in funcTable.table.keys():
-            raise ValueError('Função não declarada!')
-        
-        if new_type != this_type:
-            raise ValueError('Função recebeu tipo errado!')
-
-        funcTable.table[name] = (this_type, new_value)
-
     def create(name, type):
         if name in funcTable.table.keys():
             raise ValueError('Função já declarada!')
-        funcTable.table[name] = (type, None)
+        funcTable.table[name] = type
             
 
 class Node():
